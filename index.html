@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nai – find salons, menus and prices</title>
+<style>
+:root{--bg:#faf8f5;--cd:#fff;--tx:#1f1d1a;--mu:#6f6a62;--ac:#0f766e;--on:#fff;--bd:#e4ded3;--wb:#fef3c7;--wt:#7c4a03;--ob:#dcfce7;--ot:#166534;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#161513;--cd:#201f1c;--tx:#f1eee8;--mu:#a29c91;--ac:#2dd4bf;--on:#06201c;--bd:#33312c;--wb:#3a2c0a;--wt:#fcd88a;--ob:#12372a;--ot:#86efac;color-scheme:dark}}
+*{box-sizing:border-box}html{background:var(--bg)}
+body{margin:0 auto;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:max(14px,env(safe-area-inset-top)) 14px 40px;max-width:600px}
+h1{display:flex;align-items:center;gap:10px;font-size:22px;margin:6px 0 2px}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin:18px 0 8px}
+small,.mu{color:var(--mu)}p{margin:6px 0 12px}a{color:var(--ac)}
+.card{background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;margin:0 0 10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+label{display:block;font-size:13px;color:var(--mu);margin-bottom:10px}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--cd);color:var(--tx);font-size:16px;margin-top:4px;font-family:inherit}
+.btn{display:block;width:100%;text-align:center;text-decoration:none;background:var(--ac);color:var(--on);border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:600;cursor:pointer}
+.btn.o{background:none;color:var(--ac);border:1px solid var(--ac)}
+.btn.sm{display:inline-block;width:auto;padding:8px 12px;font-size:14px;margin-top:8px}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.tag{font-size:12px;border-radius:99px;padding:2px 9px;background:var(--bd);color:var(--mu);white-space:nowrap}
+.tag.open{background:var(--ob);color:var(--ot)}.tag.busy{background:var(--wb);color:var(--wt)}
+nav{display:flex;gap:6px;margin:12px 0}nav a{flex:1;text-align:center;padding:9px 4px;border:1px solid var(--bd);border-radius:10px;color:var(--mu);text-decoration:none;font-size:14px;background:var(--cd)}nav a.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.chk{display:flex;align-items:center;gap:8px;color:var(--tx);font-size:15px}.chk input{width:20px;height:20px;margin:0}
+.note{background:var(--wb);color:var(--wt);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:10px}
+.mi{padding:9px 0;border-bottom:1px solid var(--bd)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);top:12px;background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:99px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:5;max-width:90%}#toast.show{opacity:1}
+</style></head><body>
+<div id="app"></div><div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SB_URL='https://gsvmedcpbvaprndfpqin.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdzdm1lZGNwYnZhcHJuZGZwcWluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0ODk3OTQsImV4cCI6MjEwODA2NTc5NH0.EHzUkQV0Mzf9BMqfNz9ao0jlz-4AM24hitO31qkUgOU',CONTACT='upliftyourself27@gmail.com';
+const ready=!SB_URL.startsWith('PASTE'),sb=ready?supabase.createClient(SB_URL,SB_KEY):null;
+const TYPES=['Men’s salon','Women’s salon','Beauty parlour','Unisex salon'];
+const $=s=>document.querySelector(s),cap=s=>s[0].toUpperCase()+s.slice(1),t5=t=>String(t||'').slice(0,5);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let tt,dz=null,S={salons:[],user:null,role:null,view:'',arg:'',loc:null,locMsg:'',ex:null,f:{type:'All',q:'',open:false}};
+const say=m=>{const e=$('#toast');e.textContent=m;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),3500)};
+const km=(a,b,c,d)=>{const r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,h=Math.sin(x/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)**2;return 12742*Math.asin(Math.sqrt(h))};
+const fmt=d=>d<1?Math.round(d*100)*10+' m':d.toFixed(1)+' km';
+const isOpen=s=>{const d=new Date(),n=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');return t5(s.opens)<=n&&n<t5(s.closes)};
+const LOGO='<svg width="34" height="34" viewBox="0 0 72 72" aria-hidden="true"><rect width="72" height="72" rx="18" fill="#1f1d1a" stroke="#8a847a" stroke-width="2"/><text x="36" y="53" text-anchor="middle" font-size="46" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">N</text><line x1="14" y1="60" x2="58" y2="14" stroke="#e07a1f" stroke-width="4" stroke-linecap="round"/></svg>';
+function parse(t){const m=[];let c=null;for(const raw of t.split('\n')){const l=raw.trim();if(!l)continue;const x=l.match(/^(.+?)\s*[-–]\s*(\d+)$/);if(x){if(!c){c={cat:'Services',items:[]};m.push(c)}c.items.push({n:x[1].trim(),p:+x[2]})}else{c={cat:l,items:[]};m.push(c)}}return m.filter(c=>c.items.length)}
+const show=m=>m.map(c=>c.cat+'\n'+c.items.map(i=>i.n+' - '+i.p).join('\n')).join('\n\n');
+const wa=s=>'https://wa.me/'+String(s.phone).replace(/\D/g,'')+'?text='+encodeURIComponent('Hi, I found you on Nai. I would like to book an appointment.');
+async function whoami(){const r=await sb.auth.getSession(),u=r.data.session?r.data.session.user:null;S.user=u;S.role=null;if(u){const p=await sb.from('profiles').select('role').eq('id',u.id).maybeSingle();S.role=p.data?p.data.role:'owner'}}
+async function load(){const r=await sb.from('salons').select('*').order('name');S.salons=r.data||[];if(r.error)say(r.error.message)}
+async function boot(){if(!ready)return route();await whoami();await load();route()}
+function route(){const p=(location.hash||'#/').split('/');S.view=p[1]||'';S.arg=p[2];render()}
+function hd(){return `<h1>${LOGO}Nai <span style="color:var(--ac)">नाई</span></h1><small>Find salons, menus and prices near you</small>`}
+function nav(){const l=[['','Home'],['owner','For salons'],...(S.role=='admin'?[['admin','Admin']]:[]),['privacy','Privacy']];return `<nav>${l.map(x=>`<a href="#/${x[0]}" class="${S.view==x[0]?'on':''}">${x[1]}</a>`).join('')}</nav>`}
+function locH(){return S.loc?`<div class="card row"><span>Using your location</span><button class="btn o sm" style="margin:0" onclick="S.loc=null;render()">Stop</button></div>`:`<div class="card"><b>See how far each salon is</b><p class="mu">Nai uses your location only on this screen, to work out distances. It stays on your phone and is never saved or shared. You can say no and still browse everything.</p>${S.locMsg?`<div class="note">${esc(S.locMsg)}</div>`:''}<button class="btn" onclick="ask()">Use my location</button></div>`}
+function ask(){S.locMsg='';if(!navigator.geolocation){S.locMsg='This browser cannot share location.';return render()}navigator.geolocation.getCurrentPosition(p=>{S.loc=[p.coords.latitude,p.coords.longitude];render()},e=>{S.locMsg=e.code==1?'Location is off. You can turn it on in your browser or phone settings, or just browse without it.':'Your location is not available right now.';render()},{enableHighAccuracy:false,timeout:12000,maximumAge:60000})}
+const tg=id=>{S.ex=S.ex==id?null:id;render()};
+function menuH(s){return `<div style="margin-top:10px">${(s.menu||[]).map(c=>`<h3>${esc(c.cat)}</h3>${c.items.map(i=>`<div class="row mi"><span>${esc(i.n)}</span><b>₹${+i.p}</b></div>`).join('')}`).join('')||'<small>This salon has not added its menu yet.</small>'}<br><small>Prices are set by the salon and may change.</small></div>`}
+function card(s){const d=S.loc&&s.lat!=null?km(S.loc[0],S.loc[1],s.lat,s.lng):null,stt=isOpen(s)?s.status:'closed';
+return `<div class="card"><div class="row"><b>${esc(s.name)}</b><span class="tag ${stt}">${cap(stt)}</span></div><small>${esc(s.type)}${s.area?' · '+esc(s.area):''}</small>
+<div class="row" style="margin-top:6px"><small>${t5(s.opens)}–${t5(s.closes)}</small><b>${d==null?'':fmt(d)}</b></div>
+<div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="tg('${s.id}')">${S.ex==s.id?'Hide menu':'View menu and prices'}</button><a class="btn o sm" href="${wa(s)}" target="_blank" rel="noopener">Book on WhatsApp</a>${s.lat!=null?`<a class="btn o sm" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}" target="_blank" rel="noopener">Directions</a>`:''}</div>${S.ex==s.id?menuH(s):''}</div>`}
+function home(){const f=S.f,q=f.q.toLowerCase();let L=S.salons.filter(s=>s.approved&&(f.type=='All'||s.type==f.type)&&(!f.open||isOpen(s))&&(!q||(s.name+' '+(s.area||'')+' '+JSON.stringify(s.menu)).toLowerCase().includes(q)));
+L.sort((a,b)=>S.loc&&a.lat!=null&&b.lat!=null?km(S.loc[0],S.loc[1],a.lat,a.lng)-km(S.loc[0],S.loc[1],b.lat,b.lng):a.name.localeCompare(b.name));
+return locH()+`<label>Salon type<select onchange="S.f.type=this.value;render()">${['All',...TYPES].map(t=>`<option ${f.type==t?'selected':''}>${esc(t)}</option>`).join('')}</select></label><label>Search a salon, area or service<input value="${esc(f.q)}" onchange="S.f.q=this.value;render()" placeholder="for example: beard trim"></label><label class="chk"><input type="checkbox" ${f.open?'checked':''} onchange="S.f.open=this.checked;render()">Open now only</label><h3>${L.length} salon${L.length==1?'':'s'}${S.loc?' · nearest first':''}</h3>${L.map(card).join('')||'<p class="mu">No salons yet. Salon owners can add their page under “For salons”.</p>'}`}
+function authH(){return `<h3>Salon owners and admin</h3><div class="card"><p class="mu">Sign in, or create an account to add your salon page.</p><label>Email<input id="em" type="email" autocomplete="email"></label><label>Password (at least 8 characters)<input id="pw" type="password" autocomplete="current-password"></label><button class="btn" onclick="auth('in')">Sign in</button><button class="btn o" style="margin-top:8px" onclick="auth('up')">Create account</button></div>`}
+async function auth(k){const e=$('#em').value.trim(),p=$('#pw').value;if(!e||p.length<8)return say('Enter your email and a password of at least 8 characters.');const r=k=='in'?await sb.auth.signInWithPassword({email:e,password:p}):await sb.auth.signUp({email:e,password:p});if(r.error)return say(r.error.message);if(!r.data.session)return say('Check your email to confirm your account, then sign in.');await boot()}
+async function out(){await sb.auth.signOut();location.hash='#/';await boot()}
+function formH(s){const T=TYPES.map(t=>`<option ${s.type==t?'selected':''}>${t}</option>`).join('');
+return `<h3>${s.id?'Edit salon page':'Create your salon page'}</h3>${s.id&&!s.approved?'<div class="note">Waiting for approval. It is not public yet.</div>':''}<div class="card"><label>Salon name<input id="f_name" value="${esc(s.name)}"></label><label>Type<select id="f_type">${T}</select></label><label>WhatsApp number with country code (for example 919876543210)<input id="f_phone" type="tel" value="${esc(s.phone)}"></label><label>Area or address<input id="f_area" value="${esc(s.area)}"></label>
+<div class="row" style="gap:8px;align-items:flex-start"><label style="flex:1">Latitude<input id="f_lat" value="${s.lat??''}"></label><label style="flex:1">Longitude<input id="f_lng" value="${s.lng??''}"></label></div><button class="btn o sm" style="margin:0 0 10px" onclick="here()">Use my current location</button><br><small>Stand inside the salon when you tap this. It is saved as the salon’s map position.</small>
+<div class="row" style="gap:8px;margin-top:10px"><label style="flex:1">Opens<input id="f_open" type="time" value="${t5(s.opens)||'09:00'}"></label><label style="flex:1">Closes<input id="f_close" type="time" value="${t5(s.closes)||'20:00'}"></label></div>
+<label>Status right now<select id="f_status">${['open','busy','full'].map(x=>`<option value="${x}" ${s.status==x?'selected':''}>${cap(x)}</option>`).join('')}</select></label>
+<label>Menu: write a category on its own line, then each service as “name - price”<textarea id="f_menu" rows="10" placeholder="Haircut&#10;Men’s haircut - 150&#10;Kids haircut - 100&#10;&#10;Beard and shave&#10;Beard trim - 80">${esc(show(s.menu||[]))}</textarea></label>
+<button class="btn" onclick="save(${s.id?`'${s.id}'`:'null'})">Save</button>${s.id?`<button class="btn o sm" onclick="del('${s.id}')">Delete this salon page</button>`:''}</div>`}
+function here(){if(!navigator.geolocation)return say('This browser cannot share location.');navigator.geolocation.getCurrentPosition(p=>{$('#f_lat').value=p.coords.latitude.toFixed(5);$('#f_lng').value=p.coords.longitude.toFixed(5);say('Location filled in')},()=>say('Could not get your location. You can type it in.'),{timeout:12000})}
+async function save(id){const v=k=>$('#f_'+k).value.trim(),row={name:v('name'),type:v('type'),phone:v('phone').replace(/\D/g,''),area:v('area'),lat:v('lat')===''?null:+v('lat'),lng:v('lng')===''?null:+v('lng'),opens:v('open')||'09:00',closes:v('close')||'20:00',status:v('status'),menu:parse(v('menu'))};
+if(!row.name||row.phone.length<10)return say('Enter the salon name and a WhatsApp number with country code.');
+const r=id?await sb.from('salons').update(row).eq('id',id):await sb.from('salons').insert({...row,owner_id:S.user.id});
+if(r.error)return say(r.error.message);await load();say(id?'Saved.':'Saved. Your page appears after approval.');render()}
+async function del(id){if(dz!=id){dz=id;return say('Tap Delete again to confirm')}dz=null;const r=await sb.from('salons').delete().eq('id',id);if(r.error)return say(r.error.message);await load();say('Deleted.');if(S.view=='edit')location.hash='#/admin';else render()}
+async function ap(id,v){const r=await sb.from('salons').update({approved:v}).eq('id',id);if(r.error)return say(r.error.message);await load();render()}
+function adminH(){if(S.role!='admin')return '<div class="card">Admin only. Sign in with the admin account.</div>';const n=S.salons.length,a=S.salons.filter(s=>s.approved).length;
+return `<h3>Admin</h3><div class="card row"><span>${n} salon pages</span><span>${a} public, ${n-a} waiting</span></div>${S.salons.map(s=>`<div class="card"><div class="row"><b>${esc(s.name)}</b><span class="tag ${s.approved?'open':'busy'}">${s.approved?'Public':'Waiting'}</span></div><small>${esc(s.type)} · ${esc(s.phone)}</small><div class="row" style="justify-content:flex-start;gap:8px"><button class="btn sm" onclick="ap('${s.id}',${!s.approved})">${s.approved?'Hide':'Approve'}</button><a class="btn o sm" href="#/edit/${s.id}">Edit</a><button class="btn o sm" onclick="del('${s.id}')">Delete</button></div></div>`).join('')||'<p class="mu">No salon pages yet.</p>'}`}
+function privH(){return `<h3>Privacy and terms (draft)</h3><div class="card"><small>Nai is a free directory and set of tools for salons. <b>Visitors</b> can browse without an account. If you tap “Use my location”, it is used on your device to work out distances and is not stored or sent to us. <b>Salon owners</b> create an account with an email address and enter the salon’s name, WhatsApp number, address, hours and prices. These details are shown publicly once approved. You can edit or delete your salon page at any time and ask us to delete your account. Bookings are arranged directly between you and the salon on WhatsApp, and payment is made in cash at the salon. Nai does not take payments. Questions or complaints: ${esc(CONTACT)}. We reply within one month. This is a draft and should be reviewed by a lawyer before launch.</small></div>`}
+function render(){if(!ready){$('#app').innerHTML=hd()+'<div class="card"><b>Almost there</b><p>The website is not connected to its database yet. Follow SETUP.md, then paste your Supabase URL, key and email at the top of this file.</p></div>';return}
+const v=S.view;let b;
+if(v=='owner')b=S.user?formH(S.salons.find(s=>s.owner_id==S.user.id)||{})+`<br><button class="btn o sm" onclick="out()">Sign out (${esc(S.user.email)})</button>`:authH();
+else if(v=='admin')b=S.user?adminH():authH();
+else if(v=='edit')b=S.role=='admin'?formH(S.salons.find(s=>s.id==S.arg)||{})+'<br><a href="#/admin">Back to admin</a>':authH();
+else if(v=='privacy')b=privH();else b=home();
+$('#app').innerHTML=hd()+nav()+b}
+window.addEventListener('hashchange',route);boot();
+</script></body></html>
