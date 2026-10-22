@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nai – find salons, menus and prices</title>
+<style>
+:root{--bg:#faf8f5;--cd:#fff;--tx:#1f1d1a;--mu:#6f6a62;--ac:#0f766e;--on:#fff;--bd:#e4ded3;--wb:#fef3c7;--wt:#7c4a03;--ob:#dcfce7;--ot:#166534;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#161513;--cd:#201f1c;--tx:#f1eee8;--mu:#a29c91;--ac:#2dd4bf;--on:#06201c;--bd:#33312c;--wb:#3a2c0a;--wt:#fcd88a;--ob:#12372a;--ot:#86efac;color-scheme:dark}}
+*{box-sizing:border-box}html{background:var(--bg)}
+body{margin:0 auto;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:max(14px,env(safe-area-inset-top)) 14px 40px;max-width:600px}
+h1{display:flex;align-items:center;gap:10px;font-size:22px;margin:6px 0 2px}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mu);margin:18px 0 8px}
+small,.mu{color:var(--mu)}p{margin:6px 0 12px}a{color:var(--ac)}
+.card{background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;margin:0 0 10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+label{display:block;font-size:13px;color:var(--mu);margin-bottom:10px}
+input,select,textarea{width:100%;padding:11px;border:1px solid var(--bd);border-radius:10px;background:var(--cd);color:var(--tx);font-size:16px;margin-top:4px;font-family:inherit}
+.btn{display:block;width:100%;text-align:center;text-decoration:none;background:var(--ac);color:var(--on);border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:600;cursor:pointer}
+.btn.o{background:none;color:var(--ac);border:1px solid var(--ac)}
+.btn.sm{display:inline-block;width:auto;padding:8px 12px;font-size:14px;margin-top:8px}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.tag{font-size:12px;border-radius:99px;padding:2px 9px;background:var(--bd);color:var(--mu);white-space:nowrap}
+.tag.open{background:var(--ob);color:var(--ot)}.tag.busy{background:var(--wb);color:var(--wt)}
+nav{display:flex;gap:6px;margin:12px 0}nav a{flex:1;text-align:center;padding:9px 4px;border:1px solid var(--bd);border-radius:10px;color:var(--mu);text-decoration:none;font-size:13px;background:var(--cd)}nav a.on{background:var(--ac);color:var(--on);border-color:var(--ac)}
+.chk{display:flex;align-items:center;gap:8px;color:var(--tx);font-size:15px}.chk input{width:20px;height:20px;margin:0}
+.note{background:var(--wb);color:var(--wt);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:10px}
+.mi{padding:9px 0;border-bottom:1px solid var(--bd)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);top:12px;background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:99px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:5;max-width:90%}#toast.show{opacity:1}
+</style></head><body>
+<div id="app"></div><div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+const SB_URL='https://gsvmedcpbvaprndfpqin.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdzdm1lZGNwYnZhcHJuZGZwcWluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0ODk3OTQsImV4cCI6MjEwODA2NTc5NH0.EHzUkQV0Mzf9BMqfNz9ao0jlz-4AM24hitO31qkUgOU',CONTACT='upliftyourself27@gmail.com';
+const ready=!SB_URL.startsWith('PASTE'),sb=ready?supabase.createClient(SB_URL,SB_KEY):null;
+const TYPES=['Men’s salon','Women’s salon','Beauty parlour','Unisex salon'];
+const $=s=>document.querySelector(s),cap=s=>s[0].toUpperCase()+s.slice(1),t5=t=>String(t||'').slice(0,5);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let tt,dz=null,S={salons:[],user:null,role:null,view:'',arg:'',loc:null,locMsg:'',ex:null,f:{type:'All',q:'',open:false}};
+const say=m=>{const e=$('#toast');e.textContent=L(m);e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),3500)};
+const km=(a,b,c,d)=>{const r=Math.PI/180,x=(c-a)*r,y=(d-b)*r,h=Math.sin(x/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)**2;return 12742*Math.asin(Math.sqrt(h))};
+const fmt=d=>d<1?Math.round(d*100)*10+' m':d.toFixed(1)+' km';
+const isOpen=s=>{const d=new Date(),n=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');return t5(s.opens)<=n&&n<t5(s.closes)};
+const LOGO='<svg width="34" height="34" viewBox="0 0 72 72" aria-hidden="true"><rect width="72" height="72" rx="18" fill="#1f1d1a" stroke="#8a847a" stroke-width="2"/><text x="36" y="53" text-anchor="middle" font-size="46" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">N</text><line x1="14" y1="60" x2="58" y2="14" stroke="#e07a1f" stroke-width="4" stroke-linecap="round"/></svg>';
+function parse(t){const m=[];let c=null;for(const raw of t.split('\n')){const l=raw.trim();if(!l)continue;const x=l.match(/^(.+?)\s*[-–]\s*(\d+)$/);if(x){if(!c){c={cat:'Services',items:[]};m.push(c)}c.items.push({n:x[1].trim(),p:+x[2]})}else{c={cat:l,items:[]};m.push(c)}}return m.filter(c=>c.items.length)}
+const show=m=>m.map(c=>c.cat+'\n'+c.items.map(i=>i.n+' - '+i.p).join('\n')).join('\n\n');
+const wa=s=>'https://wa.me/'+String(s.phone).replace(/\D/g,'')+'?text='+encodeURIComponent(L('Hi, I found you on Nai. I would like to book an appointment.'));
+async function whoami(){const r=await sb.auth.getSession(),u=r.data.session?r.data.session.user:null;S.user=u;S.role=null;if(u){const p=await sb.from('profiles').select('role').eq('id',u.id).maybeSingle();S.role=p.data?p.data.role:'owner'}}
+async function load(){const r=await sb.from('salons').select('*').order('name');S.salons=r.data||[];if(r.error)say(r.error.message)}
+async function boot(){if(!ready)return route();await whoami();await load();await loadDesk();route()}
+function route(){const p=(location.hash||'#/').split('/');S.view=p[1]||'';S.arg=p[2];render()}
+function hd(){return `<h1>${LOGO}Nai <span style="color:var(--ac)">नाई</span></h1><small>Find salons, menus and prices near you</small><div style="margin-top:8px"><select onchange="setLang(this.value)" aria-label="Language" style="width:auto;margin:0;padding:6px 8px;font-size:14px">${[['en','English'],['hi','हिन्दी'],['hg','Hinglish'],['mr','मराठी']].map(l=>`<option value="${l[0]}" ${LANG==l[0]?'selected':''}>${l[1]}</option>`).join('')}</select></div>`}
+function nav(){const l=[['','Home'],['owner','For salons'],['me','My account'],...(S.role=='admin'?[['admin','Admin']]:[]),['privacy','Privacy']];return `<nav>${l.map(x=>`<a href="#/${x[0]}" class="${S.view==x[0]?'on':''}">${x[1]}</a>`).join('')}</nav>`}
+function locH(){return S.loc?`<div class="card row"><span>Using your location</span><button class="btn o sm" style="margin:0" onclick="S.loc=null;render()">Stop</button></div>`:`<div class="card"><b>See how far each salon is</b><p class="mu">Nai uses your location only on this screen, to work out distances. It stays on your phone and is never saved or shared. You can say no and still browse everything.</p>${S.locMsg?`<div class="note">${esc(S.locMsg)}</div>`:''}<button class="btn" onclick="ask()">Use my location</button></div>`}
+function ask(){S.locMsg='';if(!navigator.geolocation){S.locMsg='This browser cannot share location.';return render()}navigator.geolocation.getCurrentPosition(p=>{S.loc=[p.coords.latitude,p.coords.longitude];render()},e=>{S.locMsg=e.code==1?'Location is off. You can turn it on in your browser or phone settings, or just browse without it.':'Your location is not available right now.';render()},{enableHighAccuracy:false,timeout:12000,maximumAge:60000})}
+const tg=id=>{S.ex=S.ex==id?null:id;render()};
+function menuH(s){return `<div style="margin-top:10px">${(s.menu||[]).map(c=>`<h3>${esc(c.cat)}</h3>${c.items.map(i=>`<div class="row mi"><span>${esc(i.n)}</span><b>₹${+i.p}</b></div>`).join('')}`).join('')||'<small>This salon has not added its menu yet.</small>'}<br><small>Prices are set by the salon and may change.</small></div>`}
+function card(s){const d=S.loc&&s.lat!=null?km(S.loc[0],S.loc[1],s.lat,s.lng):null,stt=isOpen(s)?s.status:'closed';
+return `<div class="card"><div class="row"><b>${esc(s.name)}</b><span class="tag ${stt}">${cap(stt)}</span></div><small>${esc(s.type)}${s.area?' · '+esc(s.area):''}</small>
+<div class="row" style="margin-top:6px"><small>${t5(s.opens)}–${t5(s.closes)}</small><b>${d==null?'':fmt(d)}</b></div>
+<div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="tg('${s.id}')">${S.ex==s.id?'Hide menu':'View menu and prices'}</button><a class="btn o sm" href="${wa(s)}" target="_blank" rel="noopener">Book on WhatsApp</a>${s.lat!=null?`<a class="btn o sm" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}" target="_blank" rel="noopener">Directions</a>`:''}</div>${S.ex==s.id?menuH(s):''}</div>`}
+function home(){const f=S.f,q=f.q.toLowerCase();let L=S.salons.filter(s=>s.approved&&(f.type=='All'||s.type==f.type)&&(!f.open||isOpen(s))&&(!q||(s.name+' '+(s.area||'')+' '+JSON.stringify(s.menu)).toLowerCase().includes(q)));
+L.sort((a,b)=>S.loc&&a.lat!=null&&b.lat!=null?km(S.loc[0],S.loc[1],a.lat,a.lng)-km(S.loc[0],S.loc[1],b.lat,b.lng):a.name.localeCompare(b.name));
+return locH()+`<label>Salon type<select onchange="S.f.type=this.value;render()">${['All',...TYPES].map(t=>`<option value="${esc(t)}" ${f.type==t?'selected':''}>${esc(t)}</option>`).join('')}</select></label><label>Search a salon, area or service<input value="${esc(f.q)}" onchange="S.f.q=this.value;render()" placeholder="for example: beard trim"></label><label class="chk"><input type="checkbox" ${f.open?'checked':''} onchange="S.f.open=this.checked;render()">Open now only</label><h3>${L.length} salon${L.length==1?'':'s'}${S.loc?' · nearest first':''}</h3>${L.map(card).join('')||'<p class="mu">No salons yet. Salon owners can add their page under “For salons”.</p>'}`}
+function authH(){return `<h3>Salon owners and admin</h3><div class="card"><p class="mu">Sign in, or create an account to add your salon page.</p><label>Email<input id="em" type="email" autocomplete="email"></label><label>Password (at least 8 characters)<input id="pw" type="password" autocomplete="current-password"></label><button class="btn" onclick="auth('in')">Sign in</button><button class="btn o" style="margin-top:8px" onclick="auth('up')">Create account</button></div>`}
+async function auth(k){const e=$('#em').value.trim(),p=$('#pw').value;if(!e||p.length<8)return say('Enter your email and a password of at least 8 characters.');const r=k=='in'?await sb.auth.signInWithPassword({email:e,password:p}):await sb.auth.signUp({email:e,password:p});if(r.error)return say(r.error.message);if(!r.data.session)return say('Check your email to confirm your account, then sign in.');await boot()}
+async function out(){await sb.auth.signOut();location.hash='#/';await boot()}
+function formH(s){const T=TYPES.map(t=>`<option value="${t}" ${s.type==t?'selected':''}>${t}</option>`).join('');
+return `<h3>${s.id?'Edit salon page':'Create your salon page'}</h3>${s.id&&!s.approved?'<div class="note">Waiting for approval. It is not public yet.</div>':''}<div class="card"><label>Salon name<input id="f_name" value="${esc(s.name)}"></label><label>Type<select id="f_type">${T}</select></label><label>WhatsApp number with country code (for example 919876543210)<input id="f_phone" type="tel" value="${esc(s.phone)}"></label><label>Area or address<input id="f_area" value="${esc(s.area)}"></label>
+<div class="row" style="gap:8px;align-items:flex-start"><label style="flex:1">Latitude<input id="f_lat" value="${s.lat??''}"></label><label style="flex:1">Longitude<input id="f_lng" value="${s.lng??''}"></label></div><button class="btn o sm" style="margin:0 0 10px" onclick="here()">Use my current location</button><br><small>Stand inside the salon when you tap this. It is saved as the salon’s map position.</small>
+<div class="row" style="gap:8px;margin-top:10px"><label style="flex:1">Opens<input id="f_open" type="time" value="${t5(s.opens)||'09:00'}"></label><label style="flex:1">Closes<input id="f_close" type="time" value="${t5(s.closes)||'20:00'}"></label></div>
+<label>Status right now<select id="f_status">${['open','busy','full'].map(x=>`<option value="${x}" ${s.status==x?'selected':''}>${cap(x)}</option>`).join('')}</select></label>
+<label>Menu: write a category on its own line, then each service as “name - price”<textarea id="f_menu" rows="10" placeholder="Haircut&#10;Men’s haircut - 150&#10;Kids haircut - 100&#10;&#10;Beard and shave&#10;Beard trim - 80">${esc(show(s.menu||[]))}</textarea></label>
+<button class="btn" onclick="save(${s.id?`'${s.id}'`:'null'})">Save</button>${s.id?`<button class="btn o sm" onclick="del('${s.id}')">Delete this salon page</button>`:''}</div>`}
+function here(){if(!navigator.geolocation)return say('This browser cannot share location.');navigator.geolocation.getCurrentPosition(p=>{$('#f_lat').value=p.coords.latitude.toFixed(5);$('#f_lng').value=p.coords.longitude.toFixed(5);say('Location filled in')},()=>say('Could not get your location. You can type it in.'),{timeout:12000})}
+async function save(id){const v=k=>$('#f_'+k).value.trim(),row={name:v('name'),type:v('type'),phone:v('phone').replace(/\D/g,''),area:v('area'),lat:v('lat')===''?null:+v('lat'),lng:v('lng')===''?null:+v('lng'),opens:v('open')||'09:00',closes:v('close')||'20:00',status:v('status'),menu:parse(v('menu'))};
+if(!row.name||row.phone.length<10)return say('Enter the salon name and a WhatsApp number with country code.');
+const r=id?await sb.from('salons').update(row).eq('id',id):await sb.from('salons').insert({...row,owner_id:S.user.id});
+if(r.error)return say(r.error.message);await load();say(id?'Saved.':'Saved. Your page appears after approval.');if(!id)location.hash=S.role=='admin'?'#/admin':'#/owner';else render()}
+async function del(id){if(dz!=id){dz=id;return say('Tap Delete again to confirm')}dz=null;const r=await sb.from('salons').delete().eq('id',id);if(r.error)return say(r.error.message);await load();say('Deleted.');if(S.view=='edit')location.hash=S.role=='admin'?'#/admin':'#/owner';else render()}
+async function ap(id,v){const r=await sb.from('salons').update({approved:v}).eq('id',id);if(r.error)return say(r.error.message);await load();render()}
+function adminH(){if(S.role!='admin')return '<div class="card">Admin only. Sign in with the admin account.</div>';const n=S.salons.length,a=S.salons.filter(s=>s.approved).length;
+return `<h3>Admin</h3><a class="btn sm" href="#/new">Add a salon</a><div class="card row"><span>${n} salon pages</span><span>${a} public, ${n-a} waiting</span></div>${S.salons.map(s=>`<div class="card"><div class="row"><b>${esc(s.name)}</b><span class="tag ${s.approved?'open':'busy'}">${s.approved?'Public':'Waiting'}</span></div><small>${esc(s.type)} · ${esc(s.phone)}</small><div class="row" style="justify-content:flex-start;gap:8px"><button class="btn sm" onclick="ap('${s.id}',${!s.approved})">${s.approved?'Hide':'Approve'}</button><a class="btn o sm" href="#/edit/${s.id}">Edit</a><button class="btn o sm" onclick="del('${s.id}')">Delete</button></div></div>`).join('')||'<p class="mu">No salon pages yet.</p>'}`}
+function who(){return S.user?`<div class="note" style="background:var(--ob);color:var(--ot)">Signed in as ${esc(S.user.email)}: ${S.role=='admin'?'ADMIN (full control)':'Salon owner (can change only their own salon page)'}</div>`:''}
+function privH(){return `<h3>Privacy and terms (draft)</h3><div class="card"><small>Nai is a free directory and set of tools for salons. <b>Visitors</b> can browse without an account. If you tap “Use my location”, it is used on your device to work out distances and is not stored or sent to us. <b>Salon owners</b> create an account with an email address and enter the salon’s name, WhatsApp number, address, hours and prices. These details are shown publicly once approved. You can edit or delete your salon page at any time and ask us to delete your account. Bookings are arranged directly between you and the salon on WhatsApp, and payment is made in cash at the salon. Nai does not take payments. <b>Customers:</b> when a salon adds you as a customer, it records your name, phone number, bills, credit and dues. Only that salon, and you after you link your account with the salon’s code, can see them. You can ask the salon to delete your data at any time, and you can stop WhatsApp messages from My account. Questions or complaints: ${esc(CONTACT)}. We reply within one month. This is a draft and should be reviewed by a lawyer before launch.</small></div>`}
+function render(){if(!ready){$('#app').innerHTML=hd()+'<div class="card"><b>Almost there</b><p>The website is not connected to its database yet. Follow SETUP.md, then paste your Supabase URL, key and email at the top of this file.</p></div>';return}
+const v=S.view;let b;
+if(v=='owner')b=S.user?mineH()+`<br><button class="btn o sm" onclick="out()">Sign out (${esc(S.user.email)})</button>`:authH();
+else if(v=='new')b=S.user?formH({})+'<br><a href="#/'+(S.role=='admin'?'admin':'owner')+'">Back</a>':authH();
+else if(v=='admin')b=S.user?adminH():authH();
+else if(v=='edit'){const x=S.user&&S.salons.find(s=>s.id==S.arg&&(S.role=='admin'||s.owner_id==S.user.id));b=!S.user?authH():x?formH(x)+'<br><a href="#/'+(S.role=='admin'?'admin':'owner')+'">Back</a>':'<div class="card">Salon not found.</div>'}
+else if(v=='desk')b=S.user?deskH():authH();else if(v=='me')b=S.user?meH():authH();else if(v=='privacy')b=privH();else b=home();
+$('#app').innerHTML=hd()+nav()+who()+b;tr($('#app'))}
+
+let LANG='en';try{LANG=localStorage.getItem('nai_lang')||'en'}catch(e){}
+const TR={hi:{},mr:{},hg:{}};
+[
+['Find salons, menus and prices near you','अपने पास के सैलून, मेन्यू और दाम देखें','तुमच्या जवळचे सलून, मेनू आणि दर पहा','Apne paas ke salon, menu aur daam dekhein'],
+['Home','होम','होम','Home'],
+['For salons','सैलून वालों के लिए','सलून मालकांसाठी','Salon walon ke liye'],
+['Privacy','प्राइवेसी','गोपनीयता','Privacy'],
+['See how far each salon is','देखें हर सैलून कितनी दूर है','प्रत्येक सलून किती दूर आहे ते पहा','Dekhein har salon kitni door hai'],
+['Nai uses your location only on this screen, to work out distances. It stays on your phone and is never saved or shared. You can say no and still browse everything.','Nai आपकी लोकेशन सिर्फ इस स्क्रीन पर दूरी निकालने के लिए इस्तेमाल करता है। यह आपके फोन में ही रहती है, कभी सेव या शेयर नहीं की जाती। आप मना कर सकते हैं और फिर भी सब कुछ देख सकते हैं।','Nai तुमचे लोकेशन फक्त या स्क्रीनवर अंतर काढण्यासाठी वापरते. ते तुमच्या फोनमध्येच राहते, कधीही सेव्ह किंवा शेअर केले जात नाही. तुम्ही नाही म्हणू शकता आणि तरीही सर्व काही पाहू शकता.','Nai aapki location sirf is screen par doori nikalne ke liye use karta hai. Ye aapke phone mein hi rehti hai, kabhi save ya share nahi hoti. Aap mana kar sakte hain aur phir bhi sab kuch dekh sakte hain.'],
+['Use my location','मेरी लोकेशन इस्तेमाल करें','माझे लोकेशन वापरा','Meri location use karein'],
+['Using your location','आपकी लोकेशन इस्तेमाल हो रही है','तुमचे लोकेशन वापरले जात आहे','Aapki location use ho rahi hai'],
+['Stop','बंद करें','थांबवा','Band karein'],
+['Salon type','सैलून का प्रकार','सलूनचा प्रकार','Salon ka type'],
+['All','सभी','सर्व','Sabhi'],
+['Men’s salon','पुरुषों का सैलून','पुरुषांचे सलून','Mens salon'],
+['Women’s salon','महिलाओं का सैलून','महिलांचे सलून','Womens salon'],
+['Beauty parlour','ब्यूटी पार्लर','ब्युटी पार्लर','Beauty parlour'],
+['Unisex salon','यूनिसेक्स सैलून','युनिसेक्स सलून','Unisex salon'],
+['Search a salon, area or service','सैलून, इलाका या सर्विस खोजें','सलून, परिसर किंवा सेवा शोधा','Salon, area ya service khojein'],
+['for example: beard trim','जैसे: दाढ़ी ट्रिम','उदा. दाढी ट्रिम','jaise: dadhi trim'],
+['Open now only','सिर्फ अभी खुले हुए','फक्त आता सुरू असलेले','Sirf abhi khule hue'],
+['View menu and prices','मेन्यू और दाम देखें','मेनू आणि दर पहा','Menu aur daam dekhein'],
+['Hide menu','मेन्यू छुपाएं','मेनू लपवा','Menu chhupayein'],
+['Book on WhatsApp','WhatsApp पर बुक करें','WhatsApp वर बुक करा','WhatsApp par book karein'],
+['Directions','रास्ता देखें','मार्ग पहा','Raasta dekhein'],
+['Open','खुला','सुरू','Khula'],
+['Busy','व्यस्त','व्यस्त','Busy'],
+['Full','भरा हुआ','भरले','Full'],
+['Closed','बंद','बंद','Band'],
+['This salon has not added its menu yet.','इस सैलून ने अभी मेन्यू नहीं जोड़ा है।','या सलूनने अजून मेनू जोडलेला नाही.','Is salon ne abhi menu nahi joda hai.'],
+['Prices are set by the salon and may change.','दाम सैलून तय करता है और बदल सकते हैं।','दर सलून ठरवते आणि ते बदलू शकतात.','Daam salon tay karta hai aur badal sakte hain.'],
+['Salon owners and admin','सैलून मालिक और एडमिन','सलून मालक आणि अ‍ॅडमिन','Salon malik aur admin'],
+['Email','ईमेल','ईमेल','Email'],
+['Password (at least 8 characters)','पासवर्ड (कम से कम 8 अक्षर)','पासवर्ड (किमान 8 अक्षरे)','Password (kam se kam 8 akshar)'],
+['Sign in','साइन इन','साइन इन','Sign in'],
+['Create account','अकाउंट बनाएं','खाते तयार करा','Account banayein'],
+['Create your salon page','अपना सैलून पेज बनाएं','आपले सलून पेज तयार करा','Apna salon page banayein'],
+['Edit salon page','सैलून पेज बदलें','सलून पेज बदला','Salon page badlein'],
+['Salon name','सैलून का नाम','सलूनचे नाव','Salon ka naam'],
+['Type','प्रकार','प्रकार','Type'],
+['WhatsApp number with country code (for example 919876543210)','WhatsApp नंबर, 91 के साथ (जैसे 919876543210)','WhatsApp नंबर, 91 सह (उदा. 919876543210)','WhatsApp number, 91 ke saath (jaise 919876543210)'],
+['Area or address','इलाका या पता','परिसर किंवा पत्ता','Area ya pata'],
+['Use my current location','मेरी अभी की लोकेशन इस्तेमाल करें','माझे सध्याचे लोकेशन वापरा','Meri abhi ki location use karein'],
+['Opens','खुलने का समय','उघडण्याची वेळ','Khulne ka time'],
+['Closes','बंद होने का समय','बंद होण्याची वेळ','Band hone ka time'],
+['Status right now','अभी की स्थिति','सध्याची स्थिती','Abhi ki sthiti'],
+['Menu: write a category on its own line, then each service as “name - price”','मेन्यू: एक लाइन में कैटेगरी लिखें, फिर हर सर्विस “नाम - दाम” ऐसे लिखें','मेनू: एका ओळीत कॅटेगरी लिहा, मग प्रत्येक सेवा “नाव - दर” अशी लिहा','Menu: ek line mein category likhein, phir har service “naam - daam” aise likhein'],
+['Save','सेव करें','सेव्ह करा','Save karein'],
+['Delete this salon page','यह सैलून पेज हटाएं','हे सलून पेज हटवा','Ye salon page hatayein'],
+['Saved.','सेव हो गया।','सेव्ह झाले.','Save ho gaya.'],
+['Saved. Your page appears after approval.','सेव हो गया। मंज़ूरी के बाद आपका पेज दिखेगा।','सेव्ह झाले. मंजुरीनंतर तुमचे पेज दिसेल.','Save ho gaya. Approval ke baad aapka page dikhega.'],
+['Enter the salon name and a WhatsApp number with country code.','सैलून का नाम और 91 के साथ WhatsApp नंबर डालें।','सलूनचे नाव आणि 91 सह WhatsApp नंबर टाका.','Salon ka naam aur 91 ke saath WhatsApp number daalein.'],
+['Location is off. You can turn it on in your browser or phone settings, or just browse without it.','लोकेशन बंद है। आप इसे ब्राउज़र या फोन की सेटिंग में चालू कर सकते हैं, या बिना इसके भी देख सकते हैं।','लोकेशन बंद आहे. तुम्ही ते ब्राउझर किंवा फोनच्या सेटिंगमध्ये चालू करू शकता, किंवा त्याशिवायही पाहू शकता.','Location band hai. Aap ise browser ya phone ki setting mein chalu kar sakte hain, ya bina iske bhi dekh sakte hain.'],
+['Your location is not available right now.','आपकी लोकेशन अभी नहीं मिल रही।','तुमचे लोकेशन सध्या मिळत नाही.','Aapki location abhi nahi mil rahi.']
+].forEach(r=>{TR.hi[r[0]]=r[1];TR.mr[r[0]]=r[2];TR.hg[r[0]]=r[3]});
+const PT=[[/^(\d+) salons? . nearest first$/,'$1 सैलून · सबसे पास वाले पहले','$1 सलून · जवळचे आधी','$1 salon · sabse paas wale pehle'],[/^(\d+) salons?$/,'$1 सैलून','$1 सलून','$1 salon'],[/^Sign out \((.+)\)$/,'साइन आउट ($1)','साइन आउट ($1)','Sign out ($1)']];
+function L(s){const g=TR[LANG];if(!g)return s;if(Object.hasOwn(g,s))return g[s];const i={hi:1,mr:2,hg:3}[LANG];for(const p of PT)if(p[0].test(s))return s.replace(p[0],p[i]);let t=s,ch=false;for(const p of MP)if(p[0].test(t)){t=t.replace(p[0],p[i]);ch=true}return ch?t:s}
+function tr(r){if(!TR[LANG])return;const w=document.createTreeWalker(r,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){const v=n.nodeValue,t=v.trim();if(t){const x=L(t);if(x!==t)n.nodeValue=v.replace(t,x)}}r.querySelectorAll('[placeholder]').forEach(e=>e.placeholder=L(e.placeholder))}
+function setLang(l){LANG=l;try{localStorage.setItem('nai_lang',l)}catch(e){}render()}
+function mineH(){const L=S.salons.filter(s=>s.owner_id==S.user.id);
+return `<h3>My salons</h3>${L.map(s=>`<div class="card"><div class="row"><b>${esc(s.name)}</b><span class="tag ${s.approved?'open':'busy'}">${s.approved?'Public':'Waiting'}</span></div><small>${esc(s.type)}</small><div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn sm" href="#/desk/${s.id}">Customers and bills</a><a class="btn o sm" href="#/edit/${s.id}">Edit</a></div></div>`).join('')||'<p class="mu">You have no salon page yet.</p>'}<a class="btn" href="#/new">Add a new salon</a>`}
+[['My salons','मेरे सैलून','माझी सलून','Mere salon'],['Add a new salon','नया सैलून जोड़ें','नवीन सलून जोडा','Naya salon jodein'],['Edit','बदलें','बदला','Badlein'],['Public','सबको दिखता है','सर्वांना दिसते','Sabko dikhta hai'],['Waiting','मंज़ूरी बाकी','मंजुरी बाकी','Approval baaki'],['You have no salon page yet.','अभी आपका कोई सैलून पेज नहीं है।','तुमचे अजून कोणतेही सलून पेज नाही.','Abhi aapka koi salon page nahi hai.']].forEach(r=>{TR.hi[r[0]]=r[1];TR.mr[r[0]]=r[2];TR.hg[r[0]]=r[3]});
+S.cust=[];S.ent=[];S.act=null;S.slip=null;S.bs={pick:[]};
+async function loadDesk(){if(!S.user){S.cust=[];S.ent=[];return}const a=await sb.from('customers').select('*').order('name'),b=await sb.from('entries').select('*').order('created_at',{ascending:false});S.cust=a.data||[];S.ent=b.data||[]}
+const money=n=>'₹'+n,days=t=>Math.floor((Date.now()-new Date(t))/864e5),wl=(ph,tx)=>'https://wa.me/'+String(ph).replace(/\D/g,'')+'?text='+encodeURIComponent(tx),items=s=>(s.menu||[]).flatMap(g=>g.items.map(i=>({n:i.n,p:+i.p})));
+function bal(c){let w=0,d=0,last=null;for(const e of S.ent)if(e.customer_id==c.id){if(e.kind=='topup')w+=e.amount;else if(e.kind=='paid')d-=e.amount;else{if(e.mode=='wallet')w-=e.amount;if(e.mode=='later')d+=e.amount;if(!last||e.created_at>last)last=e.created_at}}return{w,d,last}}
+function act(id,t){S.act={cid:id,type:t};S.bs={pick:[]};S.slip=null;render()}
+function pk(k){const a=S.bs.pick,i=a.indexOf(k);i<0?a.push(k):a.splice(i,1);S.bs.oa=$('#oa').value;S.bs.pm=$('#pm').value;render()}
+function rowH(s,c){const b=bal(c),od=b.last&&days(b.last)>=30,msg=b.d>0?M('Hi {n}, a friendly reminder from {s}: you have {a} due. You can pay it at your next visit. Thank you!',{n:c.name,s:s.name,a:money(b.d)}):M('Hi {n}, it has been a while since your last visit to {s}. Message us on WhatsApp to book your next slot!',{n:c.name,s:s.name});
+return `<div class="card"><div class="row"><b>${esc(c.name)}</b>${c.consent_at?'<span class="tag open">Messages OK</span>':'<span class="tag">No message consent</span>'}</div><small>${esc(c.phone)} · ${b.last?'last visit '+b.last.slice(0,10):'no visits yet'}${od?' · 30+ days':''}</small>
+<div class="row" style="margin:6px 0"><span>Credit <b>${money(b.w)}</b></span><span>Dues <b>${money(b.d)}</b></span></div>
+<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" onclick="act('${c.id}','bill')">Bill</button><button class="btn o sm" onclick="act('${c.id}','topup')">Add credit</button>${b.d>0?`<button class="btn o sm" onclick="act('${c.id}','paid')">Collect dues</button>`:''}${c.consent_at&&(b.d>0||od)?`<a class="btn o sm" href="${wl(c.phone,msg)}" target="_blank" rel="noopener">Remind</a>`:''}</div>
+<small>${c.user_id?'Customer has logged in.':'Customer login code: <b>'+esc(c.claim_code||'')+'</b>'}</small></div>`}
+function actH(s){const a=S.act;if(!a)return '';const c=S.cust.find(x=>x.id==a.cid),b=bal(c),it=items(s);let body;
+if(a.type=='bill')body=`${it.map((i,k)=>`<label class="chk" style="margin-bottom:6px"><input type="checkbox" ${S.bs.pick.includes(k)?'checked':''} onchange="pk(${k})">${esc(i.n)} <span style="margin-left:auto">${money(i.p)}</span></label>`).join('')||'<p class="mu">Add services to your salon menu, or use Other amount.</p>'}<label>Other amount (optional)<input id="oa" type="number" inputmode="numeric" value="${S.bs.oa||''}"></label><label>Payment<select id="pm"><option value="cash">Cash</option><option value="wallet" ${S.bs.pm=='wallet'?'selected':''}>Credit (${money(b.w)})</option><option value="later" ${S.bs.pm=='later'?'selected':''}>Pay later (dues)</option></select></label><button class="btn" onclick="doBill('${s.id}')">Save bill</button>`;
+else body=`<label>Amount received in cash<input id="am" type="number" inputmode="numeric" value="${a.type=='paid'?b.d:''}"></label><button class="btn" onclick="doPay('${s.id}')">Save</button>`;
+return `<div class="card"><div class="row"><b>${a.type=='bill'?'New bill':a.type=='topup'?'Add credit':'Collect dues'}: ${esc(c.name)}</b><button class="btn o sm" style="margin:0" onclick="S.act=null;render()">Close</button></div>${body}</div>`}
+async function fin(s,c,kind,amt,pm,names){await loadDesk();const b=bal(c),how=L(kind=='bill'?(pm=='later'?'to pay later':pm=='wallet'?'paid from credit':'paid in cash'):'received in cash');
+S.slip={phone:c.phone,txt:`${s.name}\n${L('Receipt')}, ${new Date().toLocaleDateString('en-IN')}\n${L(names)}\n${L('Amount')}: ${money(amt)} (${how})\n${L('Credit')}: ${money(b.w)}   ${L('Dues')}: ${money(b.d)}\n${L('Thank you!')}`};S.act=null;render()}
+async function doBill(sid){const s=S.salons.find(x=>x.id==sid),c=S.cust.find(x=>x.id==S.act.cid),ch=S.bs.pick.map(k=>items(s)[k]),o=+($('#oa').value||0),pm=$('#pm').value,amt=ch.reduce((a,i)=>a+i.p,0)+o;
+if(!(amt>0))return say('Choose a service or enter an amount.');if(pm=='wallet'&&bal(c).w<amt)return say('Not enough credit.');
+const names=[...ch.map(i=>i.n),...(o?['Other']:[])].join(', '),r=await sb.from('entries').insert({salon_id:sid,customer_id:c.id,kind:'bill',amount:amt,mode:pm,items:names});if(r.error)return say(r.error.message);await fin(s,c,'bill',amt,pm,names)}
+async function doPay(sid){const s=S.salons.find(x=>x.id==sid),c=S.cust.find(x=>x.id==S.act.cid),t=S.act.type,amt=+($('#am').value||0);
+if(!(amt>0))return say('Enter an amount.');if(t=='paid'&&amt>bal(c).d)return say('That is more than the dues.');
+const nm=t=='paid'?'Dues paid':'Credit added',r=await sb.from('entries').insert({salon_id:sid,customer_id:c.id,kind:t=='paid'?'paid':'topup',amount:amt,mode:'cash',items:nm});if(r.error)return say(r.error.message);await fin(s,c,t,amt,'cash',nm)}
+async function addC(sid){const n=$('#cn').value.trim(),p=$('#cp').value.replace(/\D/g,'');if(!n||p.length<10)return say('Enter a name and a phone number with country code.');
+const r=await sb.from('customers').insert({salon_id:sid,name:n,phone:p,consent_at:$('#cc').checked?new Date().toISOString():null});if(r.error)return say(r.error.message);await loadDesk();say('Customer added.');render()}
+function slipH(){return `<div class="card"><b>Receipt</b><pre style="white-space:pre-wrap;font:inherit;margin:8px 0">${esc(S.slip.txt)}</pre><a class="btn sm" href="${wl(S.slip.phone,S.slip.txt)}" target="_blank" rel="noopener">Send receipt on WhatsApp</a> <button class="btn o sm" onclick="S.slip=null;render()">Close</button></div>`}
+function deskH(){const s=S.salons.find(x=>x.id==S.arg&&x.owner_id==S.user.id);if(!s)return '<div class="card">Salon not found.</div>';const C=S.cust.filter(c=>c.salon_id==s.id);
+return `<h3>${esc(s.name)}</h3>${S.slip?slipH():''}${actH(s)}<div class="card"><b>Add a customer</b><label>Name<input id="cn"></label><label>Phone with country code<input id="cp" type="tel"></label><label class="chk"><input id="cc" type="checkbox">The customer agrees to get WhatsApp messages from this salon (visit reminders, dues and receipts)</label><button class="btn" style="margin-top:10px" onclick="addC('${s.id}')">Add customer</button></div><h3>${C.length} customers</h3>${C.map(c=>rowH(s,c)).join('')||'<p class="mu">No customers yet.</p>'}<a href="#/owner">Back to my salons</a>`}
+function meH(){const mine=S.cust.filter(c=>c.user_id==S.user.id);
+return `<h3>My account</h3><div class="card"><b>Link a salon</b><p class="mu">Your salon gives you a 6-character code. Enter it to see your credit, dues and receipts here.</p><label>Code<input id="lc" autocapitalize="characters"></label><button class="btn" onclick="claim()">Link</button></div>${mine.map(c=>{const s=S.salons.find(x=>x.id==c.salon_id)||{name:'Salon'},b=bal(c),E=S.ent.filter(e=>e.customer_id==c.id).slice(0,8);
+return `<div class="card"><b>${esc(s.name)}</b><div class="row" style="margin:6px 0"><span>Credit <b>${money(b.w)}</b></span><span>Dues <b>${money(b.d)}</b></span></div>${E.map(e=>`<div class="row mi"><span>${e.created_at.slice(0,10)} · ${esc(e.items||e.kind)}<br><small>${e.kind=='bill'?(e.mode=='later'?'to pay later':e.mode=='wallet'?'paid from credit':'paid in cash'):'cash received'}</small></span><b>${money(e.amount)}</b></div>`).join('')}<div style="display:flex;gap:6px;flex-wrap:wrap">${s.phone?`<a class="btn sm" href="${wl(s.phone,M('Hi, I am {n}. I would like to book an appointment.',{n:c.name}))}" target="_blank" rel="noopener">Message the salon</a>`:''}<button class="btn o sm" onclick="consent('${c.id}',${!c.consent_at})">${c.consent_at?'Stop WhatsApp messages':'Allow WhatsApp messages'}</button></div></div>`}).join('')}<br><button class="btn o sm" onclick="out()">Sign out (${esc(S.user.email)})</button>`}
+async function claim(){const r=await sb.rpc('claim_customer',{code:$('#lc').value.trim()});if(r.error)return say(r.error.message);if(!r.data)return say('That code was not found or was already used.');await load();await loadDesk();say('Linked.');render()}
+async function consent(id,ok){const r=await sb.rpc('set_my_consent',{cid:id,ok});if(r.error)return say(r.error.message);await loadDesk();render()}
+
+const M=(k,v)=>L(k).replace(/\{(\w+)\}/g,(m,x)=>v[x]);
+const MP=[[/last visit/,'पिछली विज़िट','मागील भेट','pichhli visit'],[/no visits yet/,'अभी कोई विज़िट नहीं','अजून भेट नाही','abhi koi visit nahi'],[/30\+ days/,'30+ दिन','30+ दिवस','30+ din'],[/Dues paid/,'बाकी चुकाया','बाकी भरले','Baaki chukaya'],[/Credit added/,'क्रेडिट जोड़ा','क्रेडिट जोडले','Credit joda']];
+PT.push([/^(\d+) customers$/,'$1 ग्राहक','$1 ग्राहक','$1 grahak'],[/^Credit \((.+)\)$/,'क्रेडिट ($1)','क्रेडिट ($1)','Credit ($1)'],[/^New bill: /,'नया बिल: ','नवीन बिल: ','Naya bill: '],[/^Add credit: /,'क्रेडिट जोड़ें: ','क्रेडिट जोडा: ','Credit jodein: '],[/^Collect dues: /,'बाकी वसूलें: ','बाकी वसूल करा: ','Baaki vasool karein: ']);
+[
+['My account','मेरा अकाउंट','माझे खाते','Mera account'],
+['Customers and bills','ग्राहक और बिल','ग्राहक आणि बिले','Grahak aur bill'],
+['Add a customer','नया ग्राहक जोड़ें','नवीन ग्राहक जोडा','Naya grahak jodein'],
+['Name','नाम','नाव','Naam'],
+['Phone with country code','फोन नंबर, 91 के साथ','फोन नंबर, 91 सह','Phone number, 91 ke saath'],
+['The customer agrees to get WhatsApp messages from this salon (visit reminders, dues and receipts)','ग्राहक इस सैलून से WhatsApp संदेश पाने के लिए राज़ी है (विज़िट की याद, बाकी रकम और रसीद)','ग्राहक या सलूनकडून WhatsApp संदेश घेण्यास सहमत आहे (भेटीची आठवण, बाकी रक्कम आणि पावती)','Grahak is salon se WhatsApp message lene ke liye raazi hai (visit ki yaad, baaki raqam aur raseed)'],
+['Add customer','ग्राहक जोड़ें','ग्राहक जोडा','Grahak jodein'],
+['No customers yet.','अभी कोई ग्राहक नहीं।','अजून ग्राहक नाहीत.','Abhi koi grahak nahi.'],
+['Back to my salons','मेरे सैलून पर वापस','माझ्या सलूनकडे परत','Mere salon par wapas'],
+['Back','वापस','मागे','Wapas'],
+['Salon not found.','सैलून नहीं मिला।','सलून सापडले नाही.','Salon nahi mila.'],
+['Messages OK','संदेश की अनुमति है','संदेशांना परवानगी आहे','Message ki permission hai'],
+['No message consent','संदेश की अनुमति नहीं','संदेशांना परवानगी नाही','Message ki permission nahi'],
+['Credit','क्रेडिट','क्रेडिट','Credit'],
+['Dues','बाकी','बाकी','Baaki'],
+['Bill','बिल','बिल','Bill'],
+['Add credit','क्रेडिट जोड़ें','क्रेडिट जोडा','Credit jodein'],
+['Collect dues','बाकी वसूलें','बाकी वसूल करा','Baaki vasool karein'],
+['Remind','याद दिलाएं','आठवण करा','Yaad dilayein'],
+['Customer login code:','ग्राहक का लॉगिन कोड:','ग्राहकाचा लॉगिन कोड:','Grahak ka login code:'],
+['Customer has logged in.','ग्राहक लॉगिन कर चुका है।','ग्राहकाने लॉगिन केले आहे.','Grahak login kar chuka hai.'],
+['Close','बंद करें','बंद करा','Band karein'],
+['Add services to your salon menu, or use Other amount.','अपने सैलून मेन्यू में सर्विस जोड़ें, या दूसरी रकम डालें।','आपल्या सलून मेनूमध्ये सेवा जोडा, किंवा इतर रक्कम टाका.','Apne salon menu mein service jodein, ya doosri raqam daalein.'],
+['Other amount (optional)','दूसरी रकम (अगर हो)','इतर रक्कम (असल्यास)','Doosri raqam (agar ho)'],
+['Payment','भुगतान','पेमेंट','Payment'],
+['Cash','नकद','रोख','Cash'],
+['Pay later (dues)','बाद में दें (उधार)','नंतर द्या (उधार)','Baad mein dein (udhaar)'],
+['Save bill','बिल सेव करें','बिल सेव्ह करा','Bill save karein'],
+['Amount received in cash','नकद में मिली रकम','रोख मिळालेली रक्कम','Cash mein mili raqam'],
+['Receipt','रसीद','पावती','Raseed'],
+['Amount','रकम','रक्कम','Raqam'],
+['Thank you!','धन्यवाद!','धन्यवाद!','Dhanyavaad!'],
+['Send receipt on WhatsApp','WhatsApp पर रसीद भेजें','WhatsApp वर पावती पाठवा','WhatsApp par raseed bhejein'],
+['Link a salon','सैलून जोड़ें','सलून जोडा','Salon link karein'],
+['Your salon gives you a 6-character code. Enter it to see your credit, dues and receipts here.','आपका सैलून आपको 6 अक्षर का कोड देता है। उसे यहाँ डालें और अपना क्रेडिट, बाकी रकम और रसीदें देखें।','तुमचे सलून तुम्हाला 6 अक्षरांचा कोड देते. तो इथे टाका आणि तुमचे क्रेडिट, बाकी रक्कम आणि पावत्या पहा.','Aapka salon aapko 6 akshar ka code deta hai. Use yahan daalein aur apna credit, baaki raqam aur raseedein dekhein.'],
+['Code','कोड','कोड','Code'],
+['Link','जोड़ें','जोडा','Link karein'],
+['Message the salon','सैलून को मैसेज करें','सलूनला मेसेज करा','Salon ko message karein'],
+['Stop WhatsApp messages','WhatsApp संदेश बंद करें','WhatsApp संदेश बंद करा','WhatsApp message band karein'],
+['Allow WhatsApp messages','WhatsApp संदेश की अनुमति दें','WhatsApp संदेशांना परवानगी द्या','WhatsApp message ki permission dein'],
+['to pay later','बाद में देना है','नंतर द्यायचे','baad mein dena hai'],
+['paid from credit','क्रेडिट से चुकाया','क्रेडिटमधून भरले','credit se chukaya'],
+['paid in cash','नकद में चुकाया','रोख भरले','cash mein chukaya'],
+['received in cash','नकद मिला','रोख मिळाले','cash mila'],
+['cash received','नकद मिला','रोख मिळाले','cash mila'],
+['Hi {n}, a friendly reminder from {s}: you have {a} due. You can pay it at your next visit. Thank you!','नमस्ते {n}, {s} की तरफ से एक छोटी याद: आपके {a} बाकी हैं। आप अगली विज़िट पर दे सकते हैं। धन्यवाद!','नमस्कार {n}, {s} कडून छोटी आठवण: तुमचे {a} बाकी आहेत. तुम्ही पुढच्या भेटीत देऊ शकता. धन्यवाद!','Namaste {n}, {s} ki taraf se ek chhoti yaad: aapke {a} baaki hain. Aap agli visit par de sakte hain. Dhanyavaad!'],
+['Hi {n}, it has been a while since your last visit to {s}. Message us on WhatsApp to book your next slot!','नमस्ते {n}, {s} में आपकी पिछली विज़िट को काफी समय हो गया। अगला स्लॉट बुक करने के लिए हमें WhatsApp पर मैसेज करें!','नमस्कार {n}, {s} मध्ये तुमची शेवटची भेट होऊन बराच काळ झाला. पुढचा स्लॉट बुक करण्यासाठी आम्हाला WhatsApp वर मेसेज करा!','Namaste {n}, {s} mein aapki pichhli visit ko kaafi time ho gaya. Agla slot book karne ke liye hamein WhatsApp par message karein!'],
+['Hi, I am {n}. I would like to book an appointment.','नमस्ते, मैं {n} हूँ। मुझे अपॉइंटमेंट बुक करना है।','नमस्कार, मी {n}. मला अपॉइंटमेंट बुक करायची आहे.','Namaste, main {n} hoon. Mujhe appointment book karni hai.'],
+['Hi, I found you on Nai. I would like to book an appointment.','नमस्ते, मैंने आपको Nai पर देखा। मुझे अपॉइंटमेंट बुक करना है।','नमस्कार, मी तुम्हाला Nai वर पाहिले. मला अपॉइंटमेंट बुक करायची आहे.','Namaste, maine aapko Nai par dekha. Mujhe appointment book karni hai.']
+].forEach(r=>{TR.hi[r[0]]=r[1];TR.mr[r[0]]=r[2];TR.hg[r[0]]=r[3]});
+window.addEventListener('hashchange',route);boot();
+</script></body></html>
