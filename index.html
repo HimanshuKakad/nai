@@ -1,5 +1,12 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#58691f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Nai">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAADz0lEQVR42u3dzVHbQBiAYbFDmiBDTCepJJXkTCVUkk5IZlJFLrkyIDyybEnfz/Pe4GTZD6vdBS13p8eHSZpreAsEh+AQHIJDcAgOwSE4BIfgkOAQHIJDcAgOwSE4BIfgEBwSHIJDcAgOwSE4BIfgEByCQ4JDcCTv148vcOhTGfv7gCPTmLGzDziS3U329AFHvnnGbj7gSDkD3ccHHFnXJjv4gCPrqvX7yz84yDhGBhxkwEEGHGTAQcZO3Qd/417//H375dO3r6kdfLycsDKijxzv3srZ7+SVEXnMiI7jMwdJfXx82b9/PkWWERfHeQHpfGSUERTHks8+kY+kMnKvVlLPP+LLSL+UzehjybARQcZUYJ8jl49EMqYam2BZfOSSMdkhJaM+juCDR0YZpUaOsD6WyDg9vwZ85aVuKwF9HPIwEhwJfCyUEXPYqDkhDeIju4yyq5XDfRSQUXkpe6CPGjKm2vsch/goI2Mqvwm2s49KMqYOO6S7+SgmY2qyfb6Dj3oyJr9bIQOODQePqjJy47j0MYUtfBSWkX7kONZHbRkVbitH+Qj+yAkch/noIKPOhHRPH01klFqt7OOjj4yp+T7HpT5ayaiGY8Uz+Mt9dJNRcOTYyEdDGTVvKzf30VNG2TnHDX20lVF5QnqTM4A6yyi+WrlycdtcRv2l7GofZEwd9jlW+CCjC45LfWQ5dgeOvX2Q0RHHEh9k9MVxk/VtHxmTPzC+aNhoJaMjjtnBgww45n3kPVwFjm19LJdR+9jT2e6nri38jwU9x4zuE9IVMroNHoOMi2rlY5Bx6Q2lj49BxoqpRhMfg4x1k9AOPgYZq5cn5X0MMt526TZobR+DjNUyyvsYZLyTsemTUXCkHzP4qI/jmrsJH5VxXD/P4GOQcabs/x0djm3XJhGOpYMj7qq1rY9BBh/1cWz9mFpDH4MMPirj2PPR1lY+Bhlb+4Cji4xWDTIMHtVwHP7Qcwcfgww+6uAIdVBCbR+DDD4q4Ah7uEpVH4MMPnLjSHEgUz0fgww+Si1lY8qo5yM6jowHMpXxMchQPhypZdQYPAYZfGTCUeZ4v+w+wuEodohbah8jnYx0b/qSlxrzckY6Gafn13Q/judfcNjLGWQc6yPy5QwyDvQR/HLuTo8PKWTY7Go3cpABBxlwkAEHGXCQAQcZioCDDDiu+tTJ6HtbOf/Zk9F9QvqZADLgmHdABhzzGsiAY94HGWE7/reyMnIIDsEhOASHBIfgEByCQ3AIDsEhOASH4JDgEByCQ3AIDsEhOASH4BAcEhyCQ3AIDsEhOBS3/4G3DrjqauRUAAAAAElFTkSuQmCC">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Nai – find salons, menus and prices</title>
 <style>
@@ -26,12 +33,15 @@ nav{display:flex;gap:6px;margin:12px 0}nav a{flex:1;text-align:center;padding:9p
 .mi{padding:9px 0;border-bottom:1px solid var(--bd)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}.grid2 .card{margin:0}.big{display:block;font-size:22px;margin-top:2px}.bars{display:flex;align-items:flex-end;gap:8px;margin-top:10px}.bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;font-size:11px;color:var(--mu)}.bars i{display:block;width:100%;background:var(--ac);border-radius:6px 6px 2px 2px}
 .hero{background:linear-gradient(135deg,#58691f,#3c4a12);color:#fff;border-radius:18px;padding:14px 16px;margin-bottom:6px}.hero h1{margin:0 0 2px}.hero select{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.35)}.hero option{color:#222}h3{color:var(--ac)}.grid2 .card{background:var(--wb);border-color:transparent}.grid2 .big{color:var(--ac)}
+@media print{.hero,nav,.noprint,#toast{display:none!important}body{background:#fff}}
 #toast{position:fixed;left:50%;transform:translateX(-50%);top:12px;background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:99px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:5;max-width:90%}#toast.show{opacity:1}
 </style></head><body>
 <div id="app"></div><div id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script>
 const SB_URL='https://gsvmedcpbvaprndfpqin.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdzdm1lZGNwYnZhcHJuZGZwcWluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0ODk3OTQsImV4cCI6MjEwODA2NTc5NH0.EHzUkQV0Mzf9BMqfNz9ao0jlz-4AM24hitO31qkUgOU',CONTACT='upliftyourself27@gmail.com';
+const TEST=true;
 const ready=!SB_URL.startsWith('PASTE'),sb=ready?supabase.createClient(SB_URL,SB_KEY):null;
 const TYPES=['Men’s salon','Women’s salon','Beauty parlour','Unisex salon'];
 const $=s=>document.querySelector(s),cap=s=>s[0].toUpperCase()+s.slice(1),t5=t=>String(t||'').slice(0,5);
@@ -89,7 +99,7 @@ if(v=='owner')b=S.user?mineH()+`<br><button class="btn o sm" onclick="out()">Sig
 else if(v=='new')b=S.user?formH({})+'<br><a href="#/'+(S.role=='admin'?'admin':'owner')+'">Back</a>':authH();
 else if(v=='admin')b=S.user?adminH():authH();
 else if(v=='edit'){const x=S.user&&S.salons.find(s=>s.id==S.arg&&(S.role=='admin'||s.owner_id==S.user.id));b=!S.user?authH():x?formH(x)+'<br><a href="#/'+(S.role=='admin'?'admin':'owner')+'">Back</a>':'<div class="card">Salon not found.</div>'}
-else if(v=='salon'){const x=S.salons.find(s=>s.id==S.arg&&s.approved);b=x?(S.ex=x.id,card(x))+shareH(x):'<div class="card">Salon not found.</div>'}else if(v=='desk')b=S.user?deskH():authH();else if(v=='me')b=S.user?meH():authH();else if(v=='privacy')b=privH();else b=home();
+else if(v=='join')b=joinH();else if(v=='poster')b=posterH();else if(v=='salon'){const x=S.salons.find(s=>s.id==S.arg&&s.approved);b=x?(S.ex=x.id,card(x))+shareH(x):'<div class="card">Salon not found.</div>'}else if(v=='desk')b=S.user?deskH():authH();else if(v=='me')b=S.user?meH():authH();else if(v=='privacy')b=privH();else b=home();
 $('#app').innerHTML=hd()+nav()+who()+b;tr($('#app'))}
 
 let LANG='en';try{LANG=localStorage.getItem('nai_lang')||'en'}catch(e){}
@@ -152,7 +162,7 @@ function L(s){const g=TR[LANG];if(!g)return s;if(Object.hasOwn(g,s))return g[s];
 function tr(r){if(!TR[LANG])return;const w=document.createTreeWalker(r,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){const v=n.nodeValue,t=v.trim();if(t){const x=L(t);if(x!==t)n.nodeValue=v.replace(t,x)}}r.querySelectorAll('[placeholder]').forEach(e=>e.placeholder=L(e.placeholder))}
 function setLang(l){LANG=l;try{localStorage.setItem('nai_lang',l)}catch(e){}render()}
 function mineH(){const L=S.salons.filter(s=>s.owner_id==S.user.id);
-return `<h3>My salons</h3>${L.map(s=>`<div class="card"><div class="row"><b>${esc(s.name)}</b><span class="tag ${s.approved?'open':'busy'}">${s.approved?'Public':'Waiting'}</span></div><small>${esc(s.type)}</small><div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn sm" href="#/desk/${s.id}">Customers and bills</a><a class="btn o sm" href="#/salon/${s.id}">Share page</a><a class="btn o sm" href="#/edit/${s.id}">Edit</a></div></div>`).join('')||'<p class="mu">You have no salon page yet.</p>'}<a class="btn" href="#/new">Add a new salon</a>`}
+return `<h3>My salons</h3>${L.map(s=>`<div class="card"><div class="row"><b>${esc(s.name)}</b><span class="tag ${s.approved?'open':'busy'}">${s.approved?'Public':'Waiting'}</span></div><small>${esc(s.type)}</small><div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn sm" href="#/desk/${s.id}">Customers and bills</a><a class="btn o sm" href="#/salon/${s.id}">Share page</a><a class="btn o sm" href="#/poster/${s.id}">QR poster</a><a class="btn o sm" href="#/edit/${s.id}">Edit</a></div></div>`).join('')||'<p class="mu">You have no salon page yet.</p>'}<a class="btn" href="#/new">Add a new salon</a>`}
 [['My salons','मेरे सैलून','माझी सलून','Mere salon'],['Add a new salon','नया सैलून जोड़ें','नवीन सलून जोडा','Naya salon jodein'],['Edit','बदलें','बदला','Badlein'],['Public','सबको दिखता है','सर्वांना दिसते','Sabko dikhta hai'],['Waiting','मंज़ूरी बाकी','मंजुरी बाकी','Approval baaki'],['You have no salon page yet.','अभी आपका कोई सैलून पेज नहीं है।','तुमचे अजून कोणतेही सलून पेज नाही.','Abhi aapka koi salon page nahi hai.']].forEach(r=>{TR.hi[r[0]]=r[1];TR.mr[r[0]]=r[2];TR.hg[r[0]]=r[3]});
 S.cust=[];S.ent=[];S.act=null;S.slip=null;S.bs={pick:[]};
 async function loadDesk(){if(!S.user){S.cust=[];S.ent=[];return}const a=await sb.from('customers').select('*').order('name'),b=await sb.from('entries').select('*').order('created_at',{ascending:false});S.cust=a.data||[];S.ent=b.data||[]}
@@ -345,7 +355,7 @@ MP.push([/(\d+) waiting, about (\d+) min/,'$1 इंतज़ार में, �
 ].forEach(r=>{TR.hi[r[0]]=r[1];TR.mr[r[0]]=r[2];TR.hg[r[0]]=r[3]});
 
 S.pos={};
-function hd(){return `<div class="hero"><h1>${LOGO}Nai <span style="color:#d9e5a0">नाई</span></h1><small style="color:#e6ebc8">Find salons, menus and prices near you</small><div style="margin-top:8px"><select onchange="setLang(this.value)" aria-label="Language" style="width:auto;margin:0;padding:6px 8px;font-size:14px">${[['en','English'],['hi','हिन्दी'],['hg','Hinglish'],['mr','मराठी']].map(l=>`<option value="${l[0]}" ${LANG==l[0]?'selected':''}>${l[1]}</option>`).join('')}</select></div></div>`}
+function hd(){return `${TEST?'<div class="note">Test version for now. Please use test data only.</div>':''}<div class="hero"><h1>${LOGO}Nai <span style="color:#d9e5a0">नाई</span></h1><small style="color:#e6ebc8">Find salons, menus and prices near you</small><div style="margin-top:8px"><select onchange="setLang(this.value)" aria-label="Language" style="width:auto;margin:0;padding:6px 8px;font-size:14px">${[['en','English'],['hi','हिन्दी'],['hg','Hinglish'],['mr','मराठी']].map(l=>`<option value="${l[0]}" ${LANG==l[0]?'selected':''}>${l[1]}</option>`).join('')}</select></div>${DIP?'<button class="btn sm" style="background:#fff;color:#3c4a12" onclick="inst()">Install app</button>':(IOS&&!SA?'<div style="margin-top:8px;font-size:13px;color:#e6ebc8">To install: tap Share, then Add to Home Screen</div>':'')}</div>`}
 function calc(s){const it=items(s),P=S.bs.pick.map(k=>it[k]).filter(Boolean),pn=P.map(i=>i.n),O=s.offers||[],ad=[],cb=[],tips=[];
 for(const o of O){if(o.t=='add'){if(!pn.includes(o.when))continue;const x=P.find(i=>i.n==o.item);if(x){if(x.p>o.price)ad.push({d:x.p-o.price,t:M('{i} for ₹{p} with {w}',{i:o.item,p:o.price,w:o.when})})}else{const y=it.find(i=>i.n==o.item);if(y&&y.p>o.price)tips.push({k:it.indexOf(y),txt:M('{i} ₹{p} (usually ₹{u}) with {w}',{i:o.item,p:o.price,u:y.p,w:o.when})})}}
 else if(o.t=='combo'){const have=o.items.filter(n=>pn.includes(n)),base=o.items.reduce((a,n)=>{const y=it.find(i=>i.n==n);return a+(y?y.p:0)},0);if(have.length==o.items.length){if(base>o.price)cb.push({d:base-o.price,t:M('Combo: {c} for ₹{p}',{c:o.items.join(' + '),p:o.price})})}else if(have.length){const miss=o.items.find(n=>!pn.includes(n)),y=it.find(i=>i.n==miss);if(y)tips.push({k:it.indexOf(y),txt:M('Add {m} to get the combo {c} for ₹{p}',{m:miss,c:o.items.join(' + '),p:o.price})})}}}
@@ -416,5 +426,38 @@ PT.push([/^Discount in ₹ \(you allow up to (\d+)%: ₹(\d+)\)$/,'छूट ₹
 ['Leave queue','लाइन छोड़ें','रांग सोडा','Line chhodein'],
 ['You are already in the queue.','आप पहले से लाइन में हैं।','तुम्ही आधीच रांगेत आहात.','Aap pehle se line mein hain.']
 ].forEach(r=>{TR.hi[r[0]]=r[1];TR.mr[r[0]]=r[2];TR.hg[r[0]]=r[3]});
+
+function qrSvg(text,px){const q=qrcode(0,'M');q.addData(text);q.make();const n=q.getModuleCount(),m=2;let d='';for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))d+=`M${c+m} ${r+m}h1v1h-1z`;return `<svg viewBox="0 0 ${n+2*m} ${n+2*m}" width="${px}" height="${px}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`}
+const joinUrl=id=>location.origin+location.pathname+'#/join/'+id;
+function posterH(){const x=S.salons.find(s=>s.id==S.arg);if(!x)return '<div class="card">Salon not found.</div>';const u=joinUrl(x.id);
+return `<div class="card" style="text-align:center"><h2 style="margin:6px 0">${esc(x.name)}</h2><p>Scan with your phone camera</p>${typeof qrcode=='undefined'?`<p style="word-break:break-all">${esc(u)}</p>`:qrSvg(u,260)}<p><b>Scan to join</b></p><small style="word-break:break-all">${esc(u)}</small></div><button class="btn noprint" onclick="window.print()">Print poster</button><br><a class="noprint" href="#/owner">Back</a>`}
+function joinH(){const x=S.salons.find(s=>s.id==S.arg&&s.approved);if(!x)return '<div class="card">Salon not found.</div>';
+if(!S.user)return `<h3>${esc(x.name)}</h3><div class="note">Create an account or sign in to join this salon.</div>`+authH();
+if(S.cust.find(c=>c.salon_id==x.id&&c.user_id==S.user.id))return `<h3>${esc(x.name)}</h3><div class="card">You are already registered at this salon.<br><a class="btn sm" href="#/me">Go to My account</a></div>`;
+return `<h3>${esc(x.name)}</h3><div class="card"><b>Join this salon</b><p class="mu">Registering is free. Your name and phone number are kept by this salon, to run your bookings, credit and receipts.</p><label>Your name<input id="jn" autocomplete="name"></label><label>Phone with country code<input id="jp" type="tel" autocomplete="tel"></label><label class="chk"><input id="jc" type="checkbox">I agree to get WhatsApp messages from this salon (visit reminders, dues and receipts)</label><button class="btn" style="margin-top:10px" onclick="doJoin('${x.id}')">Join</button></div>`}
+async function doJoin(sid){const n=$('#jn').value.trim(),p=$('#jp').value.replace(/\D/g,'');if(!n||p.length<10)return say('Enter your name and a phone number with country code.');const r=await sb.rpc('join_salon',{sid,nm:n,ph:p,consent:$('#jc').checked});if(r.error)return say(r.error.message);await loadDesk();await loadPos();say('You have joined the salon.');location.hash='#/me'}
+[
+['QR poster','QR पोस्टर','QR पोस्टर','QR poster'],
+['Scan with your phone camera','अपने फोन के कैमरे से स्कैन करें','तुमच्या फोनच्या कॅमेऱ्याने स्कॅन करा','Apne phone ke camera se scan karein'],
+['Scan to join','जुड़ने के लिए स्कैन करें','सामील होण्यासाठी स्कॅन करा','Judne ke liye scan karein'],
+['Print poster','पोस्टर प्रिंट करें','पोस्टर प्रिंट करा','Poster print karein'],
+['Create an account or sign in to join this salon.','इस सैलून से जुड़ने के लिए अकाउंट बनाएं या साइन इन करें।','या सलूनशी जोडण्यासाठी खाते तयार करा किंवा साइन इन करा.','Is salon se judne ke liye account banayein ya sign in karein.'],
+['You are already registered at this salon.','आप इस सैलून में पहले से रजिस्टर्ड हैं।','तुम्ही या सलूनमध्ये आधीच नोंदणीकृत आहात.','Aap is salon mein pehle se registered hain.'],
+['Go to My account','मेरे अकाउंट पर जाएं','माझ्या खात्यावर जा','Mere account par jaayein'],
+['Join this salon','इस सैलून से जुड़ें','या सलूनशी जोडा','Is salon se judein'],
+['Registering is free. Your name and phone number are kept by this salon, to run your bookings, credit and receipts.','रजिस्टर करना मुफ्त है। आपका नाम और फोन नंबर यह सैलून आपकी बुकिंग, क्रेडिट और रसीद के लिए रखता है।','नोंदणी मोफत आहे. तुमचे नाव आणि फोन नंबर हे सलून तुमची बुकिंग, क्रेडिट आणि पावत्यांसाठी ठेवते.','Register karna free hai. Aapka naam aur phone number ye salon aapki booking, credit aur raseed ke liye rakhta hai.'],
+['Your name','आपका नाम','तुमचे नाव','Aapka naam'],
+['I agree to get WhatsApp messages from this salon (visit reminders, dues and receipts)','मैं इस सैलून से WhatsApp संदेश पाने के लिए राज़ी हूँ (विज़िट की याद, बाकी रकम और रसीद)','मी या सलूनकडून WhatsApp संदेश घेण्यास सहमत आहे (भेटीची आठवण, बाकी रक्कम आणि पावती)','Main is salon se WhatsApp message lene ke liye raazi hoon (visit ki yaad, baaki raqam aur raseed)'],
+['Join','जुड़ें','सामील व्हा','Judein'],
+['Enter your name and a phone number with country code.','अपना नाम और 91 के साथ फोन नंबर डालें।','तुमचे नाव आणि 91 सह फोन नंबर टाका.','Apna naam aur 91 ke saath phone number daalein.'],
+['You have joined the salon.','आप सैलून से जुड़ गए।','तुम्ही सलूनशी जोडले गेलात.','Aap salon se jud gaye.'],
+['Test version for now. Please use test data only.','अभी टेस्ट वर्ज़न है। कृपया सिर्फ टेस्ट डेटा डालें।','सध्या टेस्ट आवृत्ती आहे. कृपया फक्त टेस्ट डेटा टाका.','Abhi test version hai. Kripya sirf test data daalein.']
+].forEach(r=>{TR.hi[r[0]]=r[1];TR.mr[r[0]]=r[2];TR.hg[r[0]]=r[3]});
+
+let DIP=null;const IOS=/iphone|ipad|ipod/i.test(navigator.userAgent),SA=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();DIP=e;render()});
+function inst(){if(DIP){DIP.prompt();DIP=null;render()}}
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+[['Install app','ऐप इंस्टॉल करें','ॲप इन्स्टॉल करा','App install karein'],['To install: tap Share, then Add to Home Screen','इंस्टॉल करने के लिए: Share दबाएं, फिर Add to Home Screen','इन्स्टॉल करण्यासाठी: Share दाबा, मग Add to Home Screen','Install karne ke liye: Share dabayein, phir Add to Home Screen']].forEach(r=>{TR.hi[r[0]]=r[1];TR.mr[r[0]]=r[2];TR.hg[r[0]]=r[3]});
 window.addEventListener('hashchange',route);boot();
 </script></body></html>
